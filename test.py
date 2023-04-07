@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
+from keras.models import load_model
 import numpy as np
 import cv2
 import os
@@ -10,9 +11,11 @@ x = np.array([1,2,3,4,5])
 y = np.array([1,2,3,4,5])
 
 # 데이터셋 경로
-base_dir = 'C:\\Users\\user\\Desktop\\test'
+# 얼굴 등록시 사진 넣을 폴더(test_dir, train_dir)
+base_dir = 'C:\\Users\\user\\Desktop\\face_recognization'
 train_dir = os.path.join(base_dir, 'train_data')
 test_dir = os.path.join(base_dir, 'val_data')
+
 # 하이퍼파라미터
 batch_size = 32
 epochs = 10
@@ -41,24 +44,44 @@ test_generator = test_datagen.flow_from_directory(
     class_mode='categorical'
 )
 
-# 모델 구현
-model = keras.Sequential([
-    keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
-    keras.layers.MaxPooling2D((2, 2)),
-    keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    keras.layers.MaxPooling2D((2, 2)),
-    keras.layers.Conv2D(128, (3, 3), activation='relu'),
-    keras.layers.MaxPooling2D((2, 2)),
-    keras.layers.Flatten(),
-    keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(train_generator.num_classes, activation='softmax')
-])
+def set_model():
+    # 모델 구현
+    model = keras.Sequential([
+        keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dense(train_generator.num_classes, activation='softmax')
+    ])
 
-# 모델 컴파일
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    # 모델 컴파일
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# 모델 학습
-model.fit(train_generator, epochs=epochs, validation_data=test_generator)
+    return model
+
+# 모델 학습 함수
+def train(model):
+    model.fit(train_generator, epochs=epochs, validation_data=test_generator)
+    model.save("my_model")
+
+# 학습시킨 모델 재사용하기
+def get_model(name):
+    return load_model(name)
+
+# # 모델 새로 만들때
+#  model = set_model()
+
+# # 모델 학습
+# train(model)
+
+# 기존 모델로 할때
+model = get_model("my_model")
+
+
 
 # 모델 평가
 test_loss, test_acc = model.evaluate(test_generator)
@@ -84,8 +107,9 @@ def predict_image(img_path):
     return labels[idx]
 
 # 입력 이미지 경로
-img_path = "C:\\Users\\user\\Desktop\\test\\KakaoTalk_20230322_155433294.jpg"
+img_path = "C:\\Users\\user\\Desktop\\face_recognization\\KakaoTalk_20230322_155433294.jpg"
 
 # 이미지 분류 결과 출력
 result = predict_image(img_path)
 print('The input image is classified as:', result)
+
